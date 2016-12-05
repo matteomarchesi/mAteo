@@ -15,8 +15,14 @@ int pwmOut = 3; //pin D3
 int cyclesPerSecond = 490;
 
 int seconds = 0;
-int minutes = 44;
-int hours = 14;
+int minutes = 59;
+int hours = 23;
+
+int day = 1;
+int month = 1;
+int year = 2016;
+int monthdays[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+
 int masterClock = 0;
 
 String clocktime = ""; 
@@ -82,7 +88,7 @@ void setup() {
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.print("Stazione mAteo 0.0");
+  display.print("Stazione mAteo");
   display.display();
   delay(500);
 
@@ -165,16 +171,36 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
   masterClock ++; // with each clock rise add 1 to masterclock count
   if(masterClock == cyclesPerSecond) // 974hz on pin 6, may be 490Hz if you use pin 9 or 10
     {
-    seconds ++; // after one cycle add 1 second
-    masterClock = 0; //reset clock counter
-    
-    if(seconds==60){
-      minutes++;
-      seconds = 0;//reset seconds counter
+      seconds ++; // after one cycle add 1 second
+      masterClock = 0; //reset clock counter
       
-      if(minutes==60){
-        hours++;
-        minutes = 0;
+      if(seconds==60)
+        {
+          minutes++;
+          seconds = 0;//reset seconds counter
+          
+          if(minutes==60)
+            {
+              hours++;
+              minutes = 0;
+              if (hours == 24)
+                {
+                  day ++;
+                  hours = 0;
+                  if (day>monthdays[month])
+                  {
+                    if (!((day = 29) && (month = 2) && ((year = 2020) || (year = 2024) || (year = 2028) || (year = 2032)))) 
+                    {
+                      month ++;
+                      day = 1;
+                      if (month>12)
+                      {
+                        year ++;
+                        month = 1;
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -196,6 +222,16 @@ String printTime(){
   if(seconds<10){
     ct = String(ct + "0");
   }
-  ct = String(ct + seconds);
+  ct = String(ct + seconds + " ");
+  if (day<10){
+    ct = String(ct + "0");
+  }
+  ct = String(ct + day + "/");
+
+  if (month<10){
+    ct = String(ct + "0");
+  }
+  ct = String(ct + month + "/" + year);
+
   return ct;
 }
