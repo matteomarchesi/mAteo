@@ -5,6 +5,18 @@
 #include <Adafruit_SSD1306.h>
 
 /*
+ *  Keyboard
+ */
+
+#define KEYPIN A6 
+#define KEY1 1024
+#define KEY2 980
+#define KEY3 930
+#define KEY4 710
+#define KEY5 520
+
+
+/*
  *  Clock definitions 
  *  Connect D2 with D3 on Arduino
  */
@@ -60,6 +72,8 @@ const long interval = 2000;
 void schermo();
 
 void readSensors();
+
+int tastiera();
 
 
 void setup() {
@@ -119,7 +133,7 @@ void loop() {
     readSensors();   
   }
 
-
+  tastiera();
   schermo();
 
   
@@ -161,7 +175,6 @@ void schermo(){
     display.print(P,1);
     display.println(" mb");
     clocktime = printTime();
-    Serial.println(clocktime); //<<<<<
     display.print(clocktime);
     display.display();
 }
@@ -235,3 +248,41 @@ String printTime(){
 
   return ct;
 }
+
+int tastiera(){
+  int keyp;
+  int pressed;
+  keyp = analogRead(A6);
+  if (keyp > KEY1-20 && keyp < KEY1+20){
+    pressed = 1;
+    Serial.print(keyp);
+    Serial.print("\t");
+    Serial.println(pressed);
+  }
+  if (keyp > KEY2-20 && keyp < KEY2+20){
+    pressed = 2;
+    Serial.print(keyp);
+    Serial.print("\t");
+    Serial.println(pressed);
+  }
+  if (keyp > KEY3-20 && keyp < KEY3+20){
+    pressed = 3;
+    Serial.print(keyp);
+    Serial.print("\t");
+    Serial.println(pressed);
+  }
+  if (keyp > KEY4-20 && keyp < KEY4+20){
+    pressed = 4;
+    Serial.print(keyp);
+    Serial.print("\t");
+    Serial.println(pressed);
+  }
+  if (keyp > KEY5-20 && keyp < KEY5+20){
+    pressed = 5;
+    Serial.print(keyp);
+    Serial.print("\t");
+    Serial.println(pressed);
+  }
+  return pressed;
+}
+
