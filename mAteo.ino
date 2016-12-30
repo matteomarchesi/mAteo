@@ -25,14 +25,17 @@ int clockInterrupt = 0; //interrupt 0 is pin 2 on UNO
 int pwmOut = 3; //pin D3
 
 int cyclesPerSecond = 490;
+String ora = __TIME__;
+String data = __DATE__;
 
-int seconds = 0;
-int minutes = 59;
-int hours = 23;
+int seconds = ora.substring(6,8).toInt();
+int minutes = ora.substring(3,5).toInt();
+int hours = ora.substring(0,2).toInt();
 
-int day = 1;
-int month = 1;
-int year = 2016;
+int day = data.substring(4,6).toInt();
+int month;
+int year = data.substring(7,11).toInt();
+
 int monthdays[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
 int masterClock = 0;
@@ -71,15 +74,24 @@ const long interval = 2000;
 
 void schermo();
 
+void spento();
+void tupo();
+void newfun();
+
 void readSensors();
 
 int tastiera();
 
+int funzione = 0;
+int premuto = 0;
+/*
+ *  0 = spento
+ *  1 = t/h/p + ora
+ */
 
 void setup() {
   Serial.begin(9600);
   Serial.println("... on ...");
-
 /*  
  *   Clock setup
  */
@@ -92,6 +104,21 @@ void setup() {
   Serial.print("writing to pin: ");
   Serial.println(pwmOut);
   analogWrite(pwmOut, 127); // this starts our PWM 'clock' with a 50% duty cycle
+
+  data = data.substring(0,3);
+  if (data="Jan") {month=1;}
+  if (data="Feb") {month=2;}
+  if (data="Mar") {month=3;}
+  if (data="Apr") {month=4;}
+  if (data="May") {month=5;}
+  if (data="Jun") {month=6;}
+  if (data="Jul") {month=7;}
+  if (data="Aug") {month=8;}
+  if (data="Sep") {month=9;}
+  if (data="Oct") {month=10;}
+  if (data="Nov") {month=11;}
+  if (data="Dec") {month=12;}
+
   
 /*  
  *   Display setup
@@ -127,13 +154,15 @@ void setup() {
 
 void loop() {
   unsigned long current = millis();
-
+  
   if (current - previous >= interval) {
     previous = current;
     readSensors();   
   }
 
-  tastiera();
+  premuto = tastiera();
+  if (tastiera()==1) {funzione ++;} 
+  if (tastiera()==2) {funzione --;} 
   schermo();
 
   
@@ -161,7 +190,34 @@ void readSensors(){
   
 }
 
-void schermo(){
+void schermo()
+  {
+    if ((funzione < 0)|(funzione > 2))
+      {
+        funzione = 0;
+      }
+    if (funzione == 0)
+      {
+        spento();
+      }
+    if (funzione == 1)
+      {
+        tupo();
+      }
+    if (funzione == 2)
+      {
+        newfun();
+      }
+}
+
+void spento()
+  {
+    display.clearDisplay();
+    display.display();   
+  }
+
+void tupo()
+  {
     display.clearDisplay();
     display.setCursor(0,0);
     display.println("Temp     H/P");
@@ -177,7 +233,17 @@ void schermo(){
     clocktime = printTime();
     display.print(clocktime);
     display.display();
-}
+  }
+
+void newfun()
+  {
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print("funzione ");
+    display.print(funzione);
+    display.display();
+
+  }
 
 void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a rising clock edge PWM
 {
@@ -251,37 +317,23 @@ String printTime(){
 
 int tastiera(){
   int keyp;
-  int pressed;
+  int pressed = 0;
+  delay(100);
   keyp = analogRead(A6);
   if (keyp > KEY1-20 && keyp < KEY1+20){
     pressed = 1;
-    Serial.print(keyp);
-    Serial.print("\t");
-    Serial.println(pressed);
   }
   if (keyp > KEY2-20 && keyp < KEY2+20){
     pressed = 2;
-    Serial.print(keyp);
-    Serial.print("\t");
-    Serial.println(pressed);
   }
   if (keyp > KEY3-20 && keyp < KEY3+20){
     pressed = 3;
-    Serial.print(keyp);
-    Serial.print("\t");
-    Serial.println(pressed);
   }
   if (keyp > KEY4-20 && keyp < KEY4+20){
     pressed = 4;
-    Serial.print(keyp);
-    Serial.print("\t");
-    Serial.println(pressed);
   }
   if (keyp > KEY5-20 && keyp < KEY5+20){
     pressed = 5;
-    Serial.print(keyp);
-    Serial.print("\t");
-    Serial.println(pressed);
   }
   return pressed;
 }
