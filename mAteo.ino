@@ -48,7 +48,7 @@ String printTime();
  *  DHT22 (temperature and humidity) definitions
  */
 #define DHTTYPE DHT22 
-#define DHTPIN 13
+#define DHTPIN 12
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -60,14 +60,28 @@ SFE_BMP180 pressure;
 
 /*
  *  SSD1306 display definitions
+ *  
+ *  char size 6x8
+ *  rows start at 0, 8, 16, 24 
+ *  
+ *  +---------------------+
+ *  |Temp:  21.5 C B: 9.0V|
+ *  |RH:    42.3%         |
+ *  |Pre: 1000.1mb        |
+ *  | 16:05:38 02/12/2017 |
+ *  +---------------------+
+ *
+     *012345678901234567890*
+     ***********************
+ *  
  */
 
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
   char status;
-  double T,P;
-  float h,t;
+  double T,P, h, t, v;
+//  float h,t,v;
 
 unsigned long previous = 0;
 const long interval = 2000;
@@ -77,6 +91,7 @@ void schermo();
 void spento();
 void tupo();
 void newfun();
+void s_c();
 
 void readSensors();
 
@@ -128,7 +143,8 @@ void setup() {
   display.display();
   display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0,0);
+  
+  display.setCursor(21,16);
   display.print("Stazione mAteo");
   display.display();
   delay(500);
@@ -149,7 +165,7 @@ void setup() {
     Serial.println("BMP180 init fail\n\n");
     while(1); // Pause forever.
   }
-   
+  v=0.0;
 }
 
 void loop() {
@@ -161,8 +177,16 @@ void loop() {
   }
 
   premuto = tastiera();
-  if (tastiera()==1) {funzione ++;} 
-  if (tastiera()==2) {funzione --;} 
+  switch(premuto) {
+    case 1:
+      funzione ++;
+      break;
+    case 2:
+      funzione --;
+      break;
+    default:
+      break;
+  }
   schermo();
 
   
@@ -172,42 +196,47 @@ void readSensors(){
   h = dht.readHumidity();
   t = dht.readTemperature();
 
-  status = pressure.startTemperature();
+/*  status = pressure.startTemperature();
   if (status != 0)
   {
     // Wait for the measurement to complete:
     delay(status);
     status = pressure.getTemperature(T);
   }
-
+*/
   status = pressure.startPressure(3);
   if (status != 0)
   {
     // Wait for the measurement to complete:
     delay(status);
-    status = pressure.getPressure(P,T);
+    status = pressure.getPressure(P,t);
   }
   
 }
 
 void schermo()
   {
-    if ((funzione < 0)|(funzione > 2))
-      {
-        funzione = 0;
-      }
-    if (funzione == 0)
-      {
+    switch (funzione) {
+      case 0:
         spento();
-      }
-    if (funzione == 1)
-      {
+        break;
+      case 1:
         tupo();
-      }
-    if (funzione == 2)
-      {
+        break;
+      case 2:
+        s_c();
+        break;
+      case 3:
         newfun();
-      }
+        break;
+        
+      default:
+        if ((funzione < 0)|(funzione > 3))
+          {
+            funzione = 0;
+          }
+        break;
+    }
 }
 
 void spento()
@@ -218,22 +247,264 @@ void spento()
 
 void tupo()
   {
+    /***********************
+     *Temp:  21.5 C B: 9.0V*
+     *RH:    42.3%         *
+     *Pre: 1000.1mb        *
+     * 16:05:38 02/12/2017 *
+     ***********************
+     *012345678901234567890*
+     ***********************
+     */
     display.clearDisplay();
+    
     display.setCursor(0,0);
-    display.println("Temp     H/P");
+    display.print("Temp: ");
+    if ((t>=100)||(t<=-10)){
+      display.setCursor(6*6,0); // 100.0 -10.0
+    } else if ((t>=10)||(t<0)) {
+      display.setCursor(7*6,0); // 10.0 -1.0
+    } else {
+      display.setCursor(8*6,0); // 1.0
+    }
+    
     display.print(t,1);
-    display.print(" *C ");
+// degree circle
+    display.drawPixel(68, 0, WHITE);
+    display.drawPixel(69, 0, WHITE);
+    display.drawPixel(67, 1, WHITE);
+    display.drawPixel(70, 1, WHITE);
+    display.drawPixel(68, 2, WHITE);
+    display.drawPixel(69, 2, WHITE);
+// degree circle
+    
+    display.setCursor(12*6,0);
+    display.print("C B: ");
+    display.print(v,1);
+    display.println("V");
+
+    display.print("RH:    ");
     display.print(h,1);
-    display.println(" %");
-   
-    display.print(T,1);
-    display.print(" *C ");
+    display.println("%");
+    
+    display.print("Pre: ");
+    if (P>1000){
+      display.setCursor(5*6,16); //terza riga (0, 8, 16, 24)
+      } else {
+      display.setCursor(6*6,16);
+      }
     display.print(P,1);
-    display.println(" mb");
+    display.println("mb");
+
     clocktime = printTime();
+    display.setCursor(6,24);
     display.print(clocktime);
     display.display();
   }
+
+void s_c()
+{
+    int stfun = 0;
+    
+    display.clearDisplay();
+    clocktime = printTime();
+    display.setCursor(0,0);
+    display.print("Set Time");
+
+    display.setCursor(6,24);
+    display.print(clocktime);
+    display.display();
+
+    premuto = tastiera();
+    switch(premuto) {
+      case 3:
+        stfun++;
+        do {
+          premuto = tastiera();
+
+          display.setCursor(0,8);
+          display.fillRect(0,8,127,14,0);
+          switch(stfun){
+            case 1: //hrs
+              display.print("hours");
+              break;
+            case 2: //min
+              display.print("minutes");
+              break;
+            case 3: //sec
+              display.print("seconds");
+              break;
+            case 4: //day
+              display.print("day");
+              break;
+            case 5: //month
+              display.print("month");
+              break;
+            case 6: //year
+              display.print("year");
+              break;
+            default:
+              break;
+          };
+          display.setCursor(6,24);
+          display.fillRect(0,24,127,30,0);
+          clocktime = printTime();
+          display.print(clocktime);
+          display.display();
+
+          
+          switch(premuto){
+            case 1:
+              switch(stfun){
+                case 1: //hrs
+                  hours++;
+                  break;
+                case 2: //min
+                  minutes++;
+                  break;
+                case 3: //sec
+                  seconds=0;
+                  break;
+                case 4: //day
+                  day++;
+                  break;
+                case 5: //month
+                  month++;
+                  break;
+                case 6: //year
+                  year++;
+                  break;
+                default:
+                  break;
+              }
+              break;          
+            case 2:
+              switch(stfun){
+                case 1: //hrs
+                  hours--;
+                  break;
+                case 2: //min
+                  minutes--;
+                  break;
+                case 3: //sec
+                  seconds=0;
+                  break;
+                case 4: //day
+                  day--;
+                  break;
+                case 5: //month
+                  month--;
+                  break;
+                case 6: //year
+                  year--;
+                  break;
+                default:
+                  break;
+              }
+              break;          
+            case 3:
+              stfun++;
+              break;          
+            case 4:
+              stfun--;
+              break;          
+            case 5:
+              stfun=0;
+              break;          
+            default:
+              break;          
+          }
+        } while (stfun>0);
+        break;
+      default:
+      break;
+    }
+        
+}
+
+void set_clock()
+{
+    int stfun = 0;
+    
+    display.clearDisplay();
+    clocktime = printTime();
+    display.setCursor(0,0);
+    display.print(clocktime);
+    display.display();
+
+    premuto = tastiera();
+    switch(premuto) {
+      case 3:
+        do {
+          stfun++;
+          display.clearDisplay();
+          switch (stfun) {
+              case 1: //set hrs
+                display.setCursor(0,0);
+                display.setTextColor(BLACK, WHITE);
+                display.print(hours);
+                display.setTextColor(WHITE);
+                display.setCursor(2,0);
+                display.print(":");
+                display.setCursor(3,0);
+                display.print(minutes);
+                display.setCursor(5,0);
+                display.print(":");
+                display.setCursor(6,0);
+                display.print(seconds);
+                display.display();
+              break;
+              case 2: //set min
+                display.setTextColor(WHITE);
+                display.setCursor(0,0);
+                display.print(hours);
+                display.setCursor(2,0);
+                display.print(":");
+                display.setCursor(3,0);
+                display.setTextColor(BLACK, WHITE);
+                display.print(minutes);
+                display.setTextColor(WHITE);
+                display.setCursor(5,0);
+                display.print(":");
+                display.setCursor(6,0);
+                display.print(seconds);
+                display.display();
+              break;
+              case 3: //set sec
+                display.setTextColor(WHITE);
+                display.setCursor(0,0);
+                display.print(hours);
+                display.setCursor(2,0);
+                display.print(":");
+                display.setCursor(3,0);
+                display.print(minutes);
+                display.setCursor(5,0);
+                display.print(":");
+                display.setCursor(6,0);
+                display.setTextColor(BLACK, WHITE);
+                display.print(seconds);
+                display.setTextColor(WHITE);
+                display.display();
+              break;
+              case 4: //set day
+              break;
+              case 5: //set month
+              break;
+              case 6: //set year
+              break;
+              default:
+              break;
+          }
+          premuto = tastiera();
+          
+        } while (stfun > 0);
+        break;
+        
+      default:
+        break;
+    }
+
+}
 
 void newfun()
   {
@@ -244,6 +515,7 @@ void newfun()
     display.display();
 
   }
+  
 
 void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a rising clock edge PWM
 {
