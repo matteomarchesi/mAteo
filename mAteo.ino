@@ -15,7 +15,6 @@
 #define KEY4 710
 #define KEY5 520
 
-
 /*
  *  Clock definitions 
  *  Connect D2 with D3 on Arduino
@@ -32,11 +31,11 @@ int seconds = ora.substring(6,8).toInt();
 int minutes = ora.substring(3,5).toInt();
 int hours = ora.substring(0,2).toInt();
 
-int day = data.substring(4,6).toInt();
-int month;
-int year = data.substring(7,11).toInt();
+int dd = data.substring(4,6).toInt();
+int mm;
+int yyyy = data.substring(7,11).toInt();
 
-int monthdays[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+int mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
 int masterClock = 0;
 
@@ -57,6 +56,12 @@ DHT dht(DHTPIN, DHTTYPE);
  */
 
 SFE_BMP180 pressure;
+
+/*
+ *  Battery voltage meter
+ */
+
+#define VPIN A7 
 
 /*
  *  SSD1306 display definitions
@@ -80,7 +85,8 @@ SFE_BMP180 pressure;
 Adafruit_SSD1306 display(OLED_RESET);
 
   char status;
-  double T,P, h, t, v;
+  double T,P, h, t;
+  float vbatt;
 //  float h,t,v;
 
 unsigned long previous = 0;
@@ -119,22 +125,20 @@ void setup() {
   Serial.print("writing to pin: ");
   Serial.println(pwmOut);
   analogWrite(pwmOut, 127); // this starts our PWM 'clock' with a 50% duty cycle
-
   data = data.substring(0,3);
-  if (data="Jan") {month=1;}
-  if (data="Feb") {month=2;}
-  if (data="Mar") {month=3;}
-  if (data="Apr") {month=4;}
-  if (data="May") {month=5;}
-  if (data="Jun") {month=6;}
-  if (data="Jul") {month=7;}
-  if (data="Aug") {month=8;}
-  if (data="Sep") {month=9;}
-  if (data="Oct") {month=10;}
-  if (data="Nov") {month=11;}
-  if (data="Dec") {month=12;}
+  if (data=="Jan") {mm=1;}
+  if (data=="Feb") {mm=2;}
+  if (data=="Mar") {mm=3;}
+  if (data=="Apr") {mm=4;}
+  if (data=="May") {mm=5;}
+  if (data=="Jun") {mm=6;}
+  if (data=="Jul") {mm=7;}
+  if (data=="Aug") {mm=8;}
+  if (data=="Sep") {mm=9;}
+  if (data=="Oct") {mm=10;}
+  if (data=="Nov") {mm=11;}
+  if (data=="Dec") {mm=12;}
 
-  
 /*  
  *   Display setup
  */
@@ -165,7 +169,7 @@ void setup() {
     Serial.println("BMP180 init fail\n\n");
     while(1); // Pause forever.
   }
-  v=0.0;
+  
 }
 
 void loop() {
@@ -193,6 +197,7 @@ void loop() {
 }
 
 void readSensors(){
+  int vin;
   h = dht.readHumidity();
   t = dht.readTemperature();
 
@@ -211,7 +216,8 @@ void readSensors(){
     delay(status);
     status = pressure.getPressure(P,t);
   }
-  
+  vin = analogRead(VPIN);
+  vbatt = vin/1023.0*5.0;
 }
 
 void schermo()
@@ -280,7 +286,7 @@ void tupo()
     
     display.setCursor(12*6,0);
     display.print("C B: ");
-    display.print(v,1);
+    display.print(vbatt,1);
     display.println("V");
 
     display.print("RH:    ");
@@ -340,18 +346,18 @@ void set_clock()
 			  display.drawFastHLine(42,21,12, WHITE);
 			  display.drawFastHLine(42,22,12, WHITE);
               break;
-            case 4: //day
-              display.print("day");
+            case 4: //dd
+              display.print("dd");
 			  display.drawFastHLine(60,21,12, WHITE);
 			  display.drawFastHLine(60,22,12, WHITE);
               break;
-            case 5: //month
-              display.print("month");
+            case 5: //mm
+              display.print("mm");
 			  display.drawFastHLine(78,21,12, WHITE);
 			  display.drawFastHLine(78,22,12, WHITE);
               break;
-            case 6: //year
-              display.print("year");
+            case 6: //yyyy
+              display.print("yyyy");
 			  display.drawFastHLine(96,21,24, WHITE);
 			  display.drawFastHLine(96,22,24, WHITE);
               break;
@@ -378,14 +384,14 @@ void set_clock()
                 case 3: //sec
                   seconds=0;
                   break;
-                case 4: //day
-                  day++;
+                case 4: //dd
+                  dd++;
                   break;
-                case 5: //month
-                  month++;
+                case 5: //mm
+                  mm++;
                   break;
-                case 6: //year
-                  year++;
+                case 6: //yyyy
+                  yyyy++;
                   break;
                 default:
                   break;
@@ -402,14 +408,14 @@ void set_clock()
                 case 3: //sec
                   seconds=0;
                   break;
-                case 4: //day
-                  day--;
+                case 4: //dd
+                  dd--;
                   break;
-                case 5: //month
-                  month--;
+                case 5: //mm
+                  mm--;
                   break;
-                case 6: //year
-                  year--;
+                case 6: //yyyy
+                  yyyy--;
                   break;
                 default:
                   break;
@@ -466,18 +472,18 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
               minutes = 0;
               if (hours == 24)
                 {
-                  day ++;
+                  dd ++;
                   hours = 0;
-                  if (day>monthdays[month])
+                  if (dd>mmdds[mm])
                   {
-                    if (!((day = 29) && (month = 2) && ((year = 2020) || (year = 2024) || (year = 2028) || (year = 2032)))) 
+                    if (!((dd = 29) && (mm = 2) && ((yyyy = 2020) || (yyyy = 2024) || (yyyy = 2028) || (yyyy = 2032)))) 
                     {
-                      month ++;
-                      day = 1;
-                      if (month>12)
+                      mm ++;
+                      dd = 1;
+                      if (mm>12)
                       {
-                        year ++;
-                        month = 1;
+                        yyyy ++;
+                        mm = 1;
                 }
               }
             }
@@ -504,15 +510,15 @@ String printTime(){
     ct = String(ct + "0");
   }
   ct = String(ct + seconds + " ");
-  if (day<10){
+  if (dd<10){
     ct = String(ct + "0");
   }
-  ct = String(ct + day + "/");
+  ct = String(ct + dd + "/");
 
-  if (month<10){
+  if (mm<10){
     ct = String(ct + "0");
   }
-  ct = String(ct + month + "/" + year);
+  ct = String(ct + mm + "/" + yyyy);
 
   return ct;
 }
@@ -521,7 +527,7 @@ int tastiera(){
   int keyp;
   int pressed = 0;
   delay(100);
-  keyp = analogRead(A6);
+  keyp = analogRead(KEYPIN);
   if (keyp > KEY1-20 && keyp < KEY1+20){
     pressed = 1;
   }
