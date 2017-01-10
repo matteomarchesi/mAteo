@@ -91,7 +91,7 @@ void schermo();
 void spento();
 void tupo();
 void newfun();
-void s_c();
+void set_clock();
 
 void readSensors();
 
@@ -224,7 +224,7 @@ void schermo()
         tupo();
         break;
       case 2:
-        s_c();
+        set_clock();
         break;
       case 3:
         newfun();
@@ -288,7 +288,7 @@ void tupo()
     display.println("%");
     
     display.print("Pre: ");
-    if (P>1000){
+    if (P>=1000){
       display.setCursor(5*6,16); //terza riga (0, 8, 16, 24)
       } else {
       display.setCursor(6*6,16);
@@ -302,7 +302,7 @@ void tupo()
     display.display();
   }
 
-void s_c()
+void set_clock()
 {
     int stfun = 0;
     
@@ -323,29 +323,42 @@ void s_c()
           premuto = tastiera();
 
           display.setCursor(0,8);
-          display.fillRect(0,8,127,14,0);
+          display.fillRect(0,8,127,22,0);
           switch(stfun){
             case 1: //hrs
               display.print("hours");
+			  display.drawFastHLine(6,21,12, WHITE);
+			  display.drawFastHLine(6,22,12, WHITE);
               break;
             case 2: //min
               display.print("minutes");
+			  display.drawFastHLine(24,21,12, WHITE);
+			  display.drawFastHLine(24,22,12, WHITE);
               break;
             case 3: //sec
               display.print("seconds");
+			  display.drawFastHLine(42,21,12, WHITE);
+			  display.drawFastHLine(42,22,12, WHITE);
               break;
             case 4: //day
               display.print("day");
+			  display.drawFastHLine(60,21,12, WHITE);
+			  display.drawFastHLine(60,22,12, WHITE);
               break;
             case 5: //month
               display.print("month");
+			  display.drawFastHLine(78,21,12, WHITE);
+			  display.drawFastHLine(78,22,12, WHITE);
               break;
             case 6: //year
               display.print("year");
+			  display.drawFastHLine(96,21,24, WHITE);
+			  display.drawFastHLine(96,22,24, WHITE);
               break;
             default:
               break;
           };
+		  
           display.setCursor(6,24);
           display.fillRect(0,24,127,30,0);
           clocktime = printTime();
@@ -422,89 +435,6 @@ void s_c()
         
 }
 
-void set_clock()
-{
-    int stfun = 0;
-    
-    display.clearDisplay();
-    clocktime = printTime();
-    display.setCursor(0,0);
-    display.print(clocktime);
-    display.display();
-
-    premuto = tastiera();
-    switch(premuto) {
-      case 3:
-        do {
-          stfun++;
-          display.clearDisplay();
-          switch (stfun) {
-              case 1: //set hrs
-                display.setCursor(0,0);
-                display.setTextColor(BLACK, WHITE);
-                display.print(hours);
-                display.setTextColor(WHITE);
-                display.setCursor(2,0);
-                display.print(":");
-                display.setCursor(3,0);
-                display.print(minutes);
-                display.setCursor(5,0);
-                display.print(":");
-                display.setCursor(6,0);
-                display.print(seconds);
-                display.display();
-              break;
-              case 2: //set min
-                display.setTextColor(WHITE);
-                display.setCursor(0,0);
-                display.print(hours);
-                display.setCursor(2,0);
-                display.print(":");
-                display.setCursor(3,0);
-                display.setTextColor(BLACK, WHITE);
-                display.print(minutes);
-                display.setTextColor(WHITE);
-                display.setCursor(5,0);
-                display.print(":");
-                display.setCursor(6,0);
-                display.print(seconds);
-                display.display();
-              break;
-              case 3: //set sec
-                display.setTextColor(WHITE);
-                display.setCursor(0,0);
-                display.print(hours);
-                display.setCursor(2,0);
-                display.print(":");
-                display.setCursor(3,0);
-                display.print(minutes);
-                display.setCursor(5,0);
-                display.print(":");
-                display.setCursor(6,0);
-                display.setTextColor(BLACK, WHITE);
-                display.print(seconds);
-                display.setTextColor(WHITE);
-                display.display();
-              break;
-              case 4: //set day
-              break;
-              case 5: //set month
-              break;
-              case 6: //set year
-              break;
-              default:
-              break;
-          }
-          premuto = tastiera();
-          
-        } while (stfun > 0);
-        break;
-        
-      default:
-        break;
-    }
-
-}
 
 void newfun()
   {
