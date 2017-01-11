@@ -98,7 +98,7 @@ void spento();
 void tupo();
 void newfun();
 void set_clock();
-
+void batteryICO();
 void readSensors();
 
 int tastiera();
@@ -217,7 +217,7 @@ void readSensors(){
     status = pressure.getPressure(P,t);
   }
   vin = analogRead(VPIN);
-  vbatt = vin/1023.0*5.0;
+  vbatt = vin/1023.0*5.0*2; //voltage partition divide by 2
 }
 
 void schermo()
@@ -284,10 +284,11 @@ void tupo()
     display.drawPixel(69, 2, WHITE);
 // degree circle
     
-    display.setCursor(12*6,0);
-    display.print("C B: ");
-    display.print(vbatt,1);
-    display.println("V");
+	batteryICO(vbatt, 12*8, 0);
+//    display.setCursor(12*6,0);
+//    display.print("C B: ");
+//    display.print(vbatt,1);
+//    display.println("V");
 
     display.print("RH:    ");
     display.print(h,1);
@@ -544,5 +545,30 @@ int tastiera(){
     pressed = 5;
   }
   return pressed;
+}
+
+int float2int(float n) {
+	int  rounded = (int) n;
+	n = n - rounded;
+	if (n>=0.5) {rounded++;}
+	return rounded;
+}
+
+void batteryICO(float vbatt, int x0, int y0){
+	int blevel;
+	// draw empty battery
+	display.drawFastHLine(x0+1,y0,11, WHITE);   
+	display.drawFastHLine(x0+1,y0+6,11, WHITE);  
+	display.drawFastVLine(x0,y0+1,3, WHITE);
+	display.drawFastVLine(x0+1,y0,7, WHITE);
+	display.drawFastVLine(x0+11,y0,7, WHITE);
+	
+	// calculate how full is the battery, i.e how many thicks
+	blevel = float2int((vbatt - 7.0)/0.35); //empty batt is < 7.0V, full batt is >= 9.45, each thick is 0.35V, 7 thicks
+	
+	// fill battery with 1 thick every 0.35V
+	for (int i = 0; i = blevel; i++) {
+		display.drawFastVLine(x0+10-i,y0+2,3, WHITE);
+	}
 }
 
