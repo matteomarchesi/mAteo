@@ -1,0 +1,58 @@
+GRAFICI!!!
+
+double T,P, h
+
+int Tarr[96];
+int Parr[96];
+int harr[96];
+
+/*
+ * bla bla
+ */
+
+for (int i=1, i=95, i++){
+	Tarr[i-1] = Tarr[i];
+	Parr[i-1] = Parr[i];
+	harr[i-1] = harr[i];
+}
+
+Tarr[95]= (int) T*10;
+Parr[95]= (int) P; // no decimal
+harr[95]= (int) T*10;
+
+min / max
+int Tmin, Pmin, hmin;
+int Tmax, Pmax, hmax;
+int gtick;
+ 
+Tmin = Tarr[0];
+Tmax = Tarr[0];
+for (int i=1, i=95, i++){
+	if (Tarr[i]<Tmin) {Tmin = Tarr[i]}; 
+	if (Tarr[i]>Tmax) {Tmax = Tarr[i]}; 
+}
+
+gtick = (max - min)/19+1;  / 20 lines graph
+
+point = ((val-min)/gtick)-19
+
+
+
+32 lines - 8 lines for title row
+1 screenshot each graph.
+
+0
+1
+2
+3
+4
+5
+6
+7
+8----
+9
+
+
+
+
+
