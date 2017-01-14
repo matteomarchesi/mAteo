@@ -9,11 +9,11 @@
  */
 
 #define KEYPIN A6 
-#define KEY1 1024
-#define KEY2 980
+#define KEY5 1023
+#define KEY4 990
 #define KEY3 930
-#define KEY4 710
-#define KEY5 520
+#define KEY2 700
+#define KEY1 512
 
 /*
  *  Clock definitions 
@@ -24,20 +24,23 @@ int clockInterrupt = 0; //interrupt 0 is pin 2 on UNO
 int pwmOut = 3; //pin D3
 
 int cyclesPerSecond = 490;
+
 String ora = __TIME__;
 String data = __DATE__;
 
-int seconds = ora.substring(6,8).toInt();
-int minutes = ora.substring(3,5).toInt();
-int hours = ora.substring(0,2).toInt();
+volatile int masterClock = 0;
 
-int dd = data.substring(4,6).toInt();
-int mm;
-int yyyy = data.substring(7,11).toInt();
+volatile int seconds = ora.substring(6,8).toInt();
+volatile int minutes = ora.substring(3,5).toInt();
+volatile int hours = ora.substring(0,2).toInt();
+
+volatile int dd = data.substring(4,6).toInt();
+volatile int mm;
+volatile int yyyy = data.substring(7,11).toInt();
 
 int mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
-int masterClock = 0;
+
 
 String clocktime = ""; 
 
@@ -283,8 +286,10 @@ void tupo()
     display.drawPixel(68, 2, WHITE);
     display.drawPixel(69, 2, WHITE);
 // degree circle
+    display.setCursor(12*6,0);
+    display.println("C");
     
-	batteryICO(vbatt, 12*8, 0);
+//  	batteryICO(vbatt, 12*8, 0);
 //    display.setCursor(12*6,0);
 //    display.print("C B: ");
 //    display.print(vbatt,1);
