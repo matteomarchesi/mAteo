@@ -40,8 +40,6 @@ volatile int yyyy = data.substring(7,11).toInt();
 
 int mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
-
-
 String clocktime = ""; 
 
 String printTime();
@@ -64,7 +62,7 @@ SFE_BMP180 pressure;
  *  Battery voltage meter
  */
 
-#define VPIN A7 
+// #define VPIN A7 
 
 /*
  *  SSD1306 display definitions
@@ -89,8 +87,22 @@ Adafruit_SSD1306 display(OLED_RESET);
 
   char status;
   double T,P, h, t;
-  float vbatt;
+//  float vbatt;
 //  float h,t,v;
+
+/*
+ *   grafici
+ */
+
+int Tarr[24]; 
+int harr[24]; 
+int Parr[24]; 
+
+int stored = 1;
+
+/*
+ *  altro
+ */
 
 unsigned long previous = 0;
 const long interval = 2000;
@@ -98,9 +110,14 @@ const long interval = 2000;
 void schermo();
 
 void spento();
-void tupo();
-void newfun();
 void set_clock();
+
+void tupo(); //temperatura umidità pressione ora
+
+void graphT();
+void graphh();
+void graphP();
+
 void batteryICO();
 void readSensors();
 
@@ -122,11 +139,9 @@ void setup() {
 
   // clockInterrupt is our interrupt, clockCounter() function is called when invoked on a RISING clock edge
   attachInterrupt(clockInterrupt, clockCounter, RISING);
-  //I always give enough time to restart if its locked
+
   delay(2000);
   analogReference(DEFAULT);//not sure if this is needed
-  Serial.print("writing to pin: ");
-  Serial.println(pwmOut);
   analogWrite(pwmOut, 127); // this starts our PWM 'clock' with a 50% duty cycle
   data = data.substring(0,3);
   if (data=="Jan") {mm=1;}
@@ -169,7 +184,7 @@ void setup() {
     Serial.println("BMP180 init success");
   else
   {
-    Serial.println("BMP180 init fail\n\n");
+    Serial.println("BMP180 init fail");
     while(1); // Pause forever.
   }
   
@@ -200,7 +215,6 @@ void loop() {
 }
 
 void readSensors(){
-  int vin;
   h = dht.readHumidity();
   t = dht.readTemperature();
 
@@ -219,8 +233,29 @@ void readSensors(){
     delay(status);
     status = pressure.getPressure(P,t);
   }
-  vin = analogRead(VPIN);
-  vbatt = vin/1023.0*5.0*2; //voltage partition divide by 2
+//  vin = analogRead(VPIN);
+//  vbatt = vin/1023.0*5.0*2; //voltage partition divide by 2
+
+  if (seconds == 0) {
+    if (stored==0){
+      for (int i=1; i<24; i++){
+        Tarr[i-1]=Tarr[i];
+        Parr[i-1]=Parr[i];
+        harr[i-1]=harr[i];
+        Serial.println(Tarr[i]);
+      }
+      Tarr[23]= (int) t*10;
+      Parr[23]= (int) P; // no decimal
+      harr[23]= (int) h*10;
+      Serial.println("------");
+      Serial.println(Tarr[23]);
+      Serial.println("======");
+      stored = 1;
+    }
+  } else
+  {
+      stored = 0;
+  }
 }
 
 void schermo()
@@ -236,7 +271,7 @@ void schermo()
         set_clock();
         break;
       case 3:
-        newfun();
+        graphT();
         break;
         
       default:
@@ -289,12 +324,6 @@ void tupo()
     display.setCursor(12*6,0);
     display.println("C");
     
-//  	batteryICO(vbatt, 12*8, 0);
-//    display.setCursor(12*6,0);
-//    display.print("C B: ");
-//    display.print(vbatt,1);
-//    display.println("V");
-
     display.print("RH:    ");
     display.print(h,1);
     display.println("%");
@@ -313,6 +342,32 @@ void tupo()
     display.print(clocktime);
     display.display();
   }
+
+void graphT()
+  {
+    int vmin, vmax, gtick, pix = 0;
+    // trova min e max nell'array
+
+    for (int i=0; i<24; i++){
+      vmin=min(Tarr[i],vmin);
+      vmax=max(Tarr[i],vmax);
+    }
+    gtick = (vmax - vmin)/19+1;  // 20 lines graph
+
+    display.clearDisplay();
+    for (int i=0; i<24; i++){
+      pix= ((Tarr[i]-vmin)/gtick)+19;
+      display.drawPixel(i, pix, WHITE);
+    }
+    display.setCursor(0,24);
+    display.print("temperatura");
+    display.setCursor(90,0);
+    display.print(vmax);
+    display.setCursor(90,15);
+    display.print(vmin);
+    display.display();
+  }
+
 
 void set_clock()
 {
@@ -448,17 +503,6 @@ void set_clock()
 }
 
 
-void newfun()
-  {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print("funzione ");
-    display.print(funzione);
-    display.display();
-
-  }
-  
-
 void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a rising clock edge PWM
 {
   masterClock ++; // with each clock rise add 1 to masterclock count
@@ -557,23 +601,5 @@ int float2int(float n) {
 	n = n - rounded;
 	if (n>=0.5) {rounded++;}
 	return rounded;
-}
-
-void batteryICO(float vbatt, int x0, int y0){
-	int blevel;
-	// draw empty battery
-	display.drawFastHLine(x0+1,y0,11, WHITE);   
-	display.drawFastHLine(x0+1,y0+6,11, WHITE);  
-	display.drawFastVLine(x0,y0+1,3, WHITE);
-	display.drawFastVLine(x0+1,y0,7, WHITE);
-	display.drawFastVLine(x0+11,y0,7, WHITE);
-	
-	// calculate how full is the battery, i.e how many thicks
-	blevel = float2int((vbatt - 7.0)/0.35); //empty batt is < 7.0V, full batt is >= 9.45, each thick is 0.35V, 7 thicks
-	
-	// fill battery with 1 thick every 0.35V
-	for (int i = 0; i = blevel; i++) {
-		display.drawFastVLine(x0+10-i,y0+2,3, WHITE);
-	}
 }
 
