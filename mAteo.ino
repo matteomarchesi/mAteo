@@ -1,8 +1,8 @@
 #include <SFE_BMP180.h>
 #include <Wire.h>
-#include "DHT.h"
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <mAteo_DHT.h>
+#include <mAteo_GFX.h>
+#include <mAteo_SSD1306.h>
 
 /*
  *  Keyboard
@@ -50,19 +50,13 @@ String printTime();
 #define DHTTYPE DHT22 
 #define DHTPIN 12
 
-DHT dht(DHTPIN, DHTTYPE);
+mAteo_DHT dht(DHTPIN, DHTTYPE);
 
 /*
  *  BMP180 (temperature and pressure) definitions
  */
 
 SFE_BMP180 pressure;
-
-/*
- *  Battery voltage meter
- */
-
-// #define VPIN A7 
 
 /*
  *  SSD1306 display definitions
@@ -83,12 +77,10 @@ SFE_BMP180 pressure;
  */
 
 #define OLED_RESET 4
-Adafruit_SSD1306 display(OLED_RESET);
+mAteo_SSD1306 display(OLED_RESET);
 
   char status;
   double T,P, h, t;
-//  float vbatt;
-//  float h,t,v;
 
 /*
  *   grafici
@@ -98,7 +90,7 @@ int Tarr[24];
 int harr[24]; 
 int Parr[24]; 
 
-int stored = 1;
+int stored = 0;
 
 /*
  *  altro
@@ -110,15 +102,13 @@ const long interval = 2000;
 void schermo();
 
 void spento();
-void set_clock();
 
 void tupo(); //temperatura umidità pressione ora
 
-void graphT();
-void graphh();
-void graphP();
+void graph();
 
-void batteryICO();
+void set_clock();
+
 void readSensors();
 
 int tastiera();
@@ -233,29 +223,20 @@ void readSensors(){
     delay(status);
     status = pressure.getPressure(P,t);
   }
-//  vin = analogRead(VPIN);
-//  vbatt = vin/1023.0*5.0*2; //voltage partition divide by 2
 
-  if (seconds == 0) {
-    if (stored==0){
+//  if (((seconds == 0) || (seconds == 5) || (seconds == 10) || (seconds == 15) || (seconds == 20) || (seconds == 25) || (seconds == 30) || (seconds == 35) || (seconds == 40) || (seconds == 45) || (seconds == 50) || (seconds == 55)) && (stored == 0)) {
+  if (((minutes == 0) || (minutes == 15) || (minutes == 30) || (minutes == 45)) && (stored == 0)) {
       for (int i=1; i<24; i++){
         Tarr[i-1]=Tarr[i];
-        Parr[i-1]=Parr[i];
         harr[i-1]=harr[i];
-        Serial.println(Tarr[i]);
+        Parr[i-1]=Parr[i];
       }
-      Tarr[23]= (int) t*10;
+      Tarr[23]= (int) (t*10);
+      harr[23]= (int) (h*10);
       Parr[23]= (int) P; // no decimal
-      harr[23]= (int) h*10;
-      Serial.println("------");
-      Serial.println(Tarr[23]);
-      Serial.println("======");
       stored = 1;
-    }
   } else
-  {
       stored = 0;
-  }
 }
 
 void schermo()
@@ -268,17 +249,28 @@ void schermo()
         tupo();
         break;
       case 2:
-        set_clock();
+        graph(Tarr, "Temperatura");
         break;
       case 3:
-        graphT();
+        graph(harr, "Umidita'");
+        break;
+      case 4:
+        graph(Parr, "Pressione");
+        break;
+      case 5:
+        set_clock();
         break;
         
       default:
-        if ((funzione < 0)|(funzione > 3))
+        if (funzione < 0)
+          {
+            funzione = 5;
+          }
+        if (funzione > 5)
           {
             funzione = 0;
           }
+          
         break;
     }
 }
@@ -343,29 +335,53 @@ void tupo()
     display.display();
   }
 
-void graphT()
+String dataOut(int val){
+  String printData;
+  int in = (val/10);
+  int de = val - in * 10;
+  printData = String(in) + '.' + String(de);
+
+  return printData;
+}
+
+
+void graph(int theArray[], String message)
   {
-    int vmin, vmax, gtick, pix = 0;
+    int vmin, vmax, gtick, pix;
     // trova min e max nell'array
 
+//    Serial.println("-------------");
     for (int i=0; i<24; i++){
-      vmin=min(Tarr[i],vmin);
-      vmax=max(Tarr[i],vmax);
+      vmin=min(theArray[i],vmin);
+      vmax=max(theArray[i],vmax);
     }
-    gtick = (vmax - vmin)/19+1;  // 20 lines graph
-
+    
+    gtick = (vmax - vmin)/20;  // 20 lines graph
     display.clearDisplay();
     for (int i=0; i<24; i++){
-      pix= ((Tarr[i]-vmin)/gtick)+19;
+      pix= -1*(((theArray[i]-vmin)/gtick)-19);
       display.drawPixel(i, pix, WHITE);
     }
     display.setCursor(0,24);
-    display.print("temperatura");
+    display.print(message);
     display.setCursor(90,0);
-    display.print(vmax);
+    display.print(dataOut(vmin));
     display.setCursor(90,15);
-    display.print(vmin);
+    display.print(dataOut(vmin));
     display.display();
+
+    Serial.println(message);
+    for (int i=0; i<24; i++){
+      Serial.println(theArray[i]);
+    };
+    Serial.println("vmax\tvmin\tgtick");
+    Serial.print(vmax);
+    Serial.print("\t");
+    Serial.print(vmin);
+    Serial.print("\t");
+    Serial.print(gtick);
+    Serial.print("\n");
+    
   }
 
 
@@ -501,7 +517,6 @@ void set_clock()
     }
         
 }
-
 
 void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a rising clock edge PWM
 {
