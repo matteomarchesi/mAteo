@@ -25,18 +25,9 @@ int pwmOut = 3; //pin D3
 
 int cyclesPerSecond = 490;
 
-String ora = __TIME__;
-String data = __DATE__;
-
 volatile int masterClock = 0;
 
-volatile int seconds = ora.substring(6,8).toInt();
-volatile int minutes = ora.substring(3,5).toInt();
-volatile int hours = ora.substring(0,2).toInt();
-
-volatile int dd = data.substring(4,6).toInt();
-volatile int mm;
-volatile int yyyy = data.substring(7,11).toInt();
+volatile int seconds, minutes, hours, dd, mm, yyyy;
 
 int mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
@@ -48,7 +39,7 @@ String printTime();
  *  DHT22 (temperature and humidity) definitions
  */
 #define DHTTYPE DHT22 
-#define DHTPIN 12
+#define DHTPIN 9
 
 mAteo_DHT dht(DHTPIN, DHTTYPE);
 
@@ -80,24 +71,27 @@ SFE_BMP180 pressure;
 mAteo_SSD1306 display(OLED_RESET);
 
   char status;
-  double T,P, h, t;
+  double P, h, t;
+//  double T;
 
 /*
  *   grafici
  */
 
-int Tarr[24]; 
-int harr[24]; 
-int Parr[24]; 
+#define DATASTORED 24
 
-int stored = 0;
+volatile int Tarr[DATASTORED]; 
+volatile int harr[DATASTORED]; 
+volatile int Parr[DATASTORED]; 
+
+uint8_t stored = 0;
 
 /*
  *  altro
  */
 
 unsigned long previous = 0;
-const long interval = 2000;
+const int interval = 4000;
 
 void schermo();
 
@@ -127,12 +121,14 @@ void setup() {
  *   Clock setup
  */
 
-  // clockInterrupt is our interrupt, clockCounter() function is called when invoked on a RISING clock edge
-  attachInterrupt(clockInterrupt, clockCounter, RISING);
+  String ora = __TIME__;
+  String data = __DATE__;
+  seconds = ora.substring(6,8).toInt();
+  minutes = ora.substring(3,5).toInt();
+  hours = ora.substring(0,2).toInt();
 
-  delay(2000);
-  analogReference(DEFAULT);//not sure if this is needed
-  analogWrite(pwmOut, 127); // this starts our PWM 'clock' with a 50% duty cycle
+  dd = data.substring(4,6).toInt();
+  yyyy = data.substring(7,11).toInt();
   data = data.substring(0,3);
   if (data=="Jan") {mm=1;}
   if (data=="Feb") {mm=2;}
@@ -146,6 +142,13 @@ void setup() {
   if (data=="Oct") {mm=10;}
   if (data=="Nov") {mm=11;}
   if (data=="Dec") {mm=12;}
+
+  // clockInterrupt is our interrupt, clockCounter() function is called when invoked on a RISING clock edge
+  attachInterrupt(clockInterrupt, clockCounter, RISING);
+
+  delay(2000);
+  analogReference(DEFAULT);//not sure if this is needed
+  analogWrite(pwmOut, 127); // this starts our PWM 'clock' with a 50% duty cycle
 
 /*  
  *   Display setup
@@ -177,7 +180,12 @@ void setup() {
     Serial.println("BMP180 init fail");
     while(1); // Pause forever.
   }
-  
+  for (int i=0; i<DATASTORED; i++){
+    Tarr[i]=0; 
+    harr[i]=0; 
+    Parr[i]=0; 
+  }
+
 }
 
 void loop() {
@@ -226,14 +234,14 @@ void readSensors(){
 
 //  if (((seconds == 0) || (seconds == 5) || (seconds == 10) || (seconds == 15) || (seconds == 20) || (seconds == 25) || (seconds == 30) || (seconds == 35) || (seconds == 40) || (seconds == 45) || (seconds == 50) || (seconds == 55)) && (stored == 0)) {
   if (((minutes == 0) || (minutes == 15) || (minutes == 30) || (minutes == 45)) && (stored == 0)) {
-      for (int i=1; i<24; i++){
+      for (int i=1; i<DATASTORED; i++){
         Tarr[i-1]=Tarr[i];
         harr[i-1]=harr[i];
         Parr[i-1]=Parr[i];
       }
-      Tarr[23]= (int) (t*10);
-      harr[23]= (int) (h*10);
-      Parr[23]= (int) P; // no decimal
+      Tarr[DATASTORED-1]= (int) (t*10);
+      harr[DATASTORED-1]= (int) (h*10);
+      Parr[DATASTORED-1]= (int) P; // no decimal
       stored = 1;
   } else
       stored = 0;
@@ -249,13 +257,13 @@ void schermo()
         tupo();
         break;
       case 2:
-        graph(Tarr, "Temperatura");
+        graph(Tarr, "Temperatura (dC)", 1);
         break;
       case 3:
-        graph(harr, "Umidita'");
+        graph(harr, "Umidita' (%RH)", 1);
         break;
       case 4:
-        graph(Parr, "Pressione");
+        graph(Parr, "Pressione (mb)", 0);
         break;
       case 5:
         set_clock();
@@ -335,53 +343,50 @@ void tupo()
     display.display();
   }
 
-String dataOut(int val){
+String dataOut(int val, int r)
+{
+  // r=0 no decimal
+  // r=1 1 decimal
   String printData;
   int in = (val/10);
   int de = val - in * 10;
-  printData = String(in) + '.' + String(de);
-
+  if (r==1)
+    {printData = String(in) + '.' + String(de);}
+  else
+    {printData = val;};
+  
   return printData;
 }
 
 
-void graph(int theArray[], String message)
+void graph(int theArray[], String message, int r)
   {
-    int vmin, vmax, gtick, pix;
+    int vmin, vmax, pix;
+    float tick;
     // trova min e max nell'array
 
-//    Serial.println("-------------");
-    for (int i=0; i<24; i++){
+    vmin = vmax = theArray[DATASTORED-1];
+    for (int i=0; i<DATASTORED; i++){
       vmin=min(theArray[i],vmin);
       vmax=max(theArray[i],vmax);
     }
     
-    gtick = (vmax - vmin)/20;  // 20 lines graph
+    tick = (vmax - vmin)/19.0;  // 20 lines graph
+    if (vmax==vmin) {tick=0.1;};
     display.clearDisplay();
-    for (int i=0; i<24; i++){
-      pix= -1*(((theArray[i]-vmin)/gtick)-19);
+    for (int i=0; i<DATASTORED; i++){
+      pix= -1*(((theArray[i]-vmin)/tick)-29);
       display.drawPixel(i, pix, WHITE);
     }
-    display.setCursor(0,24);
+    display.setCursor(0,0);
     display.print(message);
-    display.setCursor(90,0);
-    display.print(dataOut(vmin));
-    display.setCursor(90,15);
-    display.print(dataOut(vmin));
+    display.setCursor(90,8);
+    display.print(dataOut(vmax, r));
+    display.setCursor(90,23);
+    display.print(dataOut(vmin, r));
+
     display.display();
 
-    Serial.println(message);
-    for (int i=0; i<24; i++){
-      Serial.println(theArray[i]);
-    };
-    Serial.println("vmax\tvmin\tgtick");
-    Serial.print(vmax);
-    Serial.print("\t");
-    Serial.print(vmin);
-    Serial.print("\t");
-    Serial.print(gtick);
-    Serial.print("\n");
-    
   }
 
 
