@@ -83,12 +83,6 @@ mAteo_SSD1306 display(OLED_RESET);
 #define DATASTOREDSIZE 6
 uint8_t mempointer = 0;
 
-/*
-volatile int Tarr[DATASTORED]; 
-volatile int harr[DATASTORED]; 
-volatile int Parr[DATASTORED]; 
-*/
-
 typedef struct {
   int tem;
   int hum;
@@ -193,18 +187,12 @@ void setup() {
     Serial.println("BMP180 init fail");
     while(1); // Pause forever.
   }
-//  gdata.tem = 0;
-//  gdata.hum = 0;
-//  gdata.pre = 0;
-  
-//  for (int i=0; i<DATASTORED; i++){
-/*    
-    Tarr[i]=0; 
-    harr[i]=0; 
-    Parr[i]=0; 
-*/
-//    EEPROM.put((i*DATASTOREDSIZE),gdata);
-//  }
+/*
+ * reset the memory
+  gdata.tem = 0;
+  gdata.hum = 0;
+  gdata.pre = 0;
+*/  
 
 }
 
@@ -254,21 +242,6 @@ void readSensors(){
 
 //  if (((seconds == 0) || (seconds == 5) || (seconds == 10) || (seconds == 15) || (seconds == 20) || (seconds == 25) || (seconds == 30) || (seconds == 35) || (seconds == 40) || (seconds == 45) || (seconds == 50) || (seconds == 55)) && (stored == 0)) {
   if (((minutes == 0) || (minutes == 30)) && (stored == 0)) {
-/*      for (int i=1; i<DATASTORED; i++){
-
-//        Tarr[i-1]=Tarr[i];
-//        harr[i-1]=harr[i];
-//        Parr[i-1]=Parr[i];
-        int add0 = (i-1)*DATASTOREDSIZE;        
-        int add1 = i*DATASTOREDSIZE;
-        EEPROM.get(add1, gdata);
-        EEPROM.put(add0, gdata);        
-      }
-      Tarr[DATASTORED-1]= (int) (t*10);
-      harr[DATASTORED-1]= (int) (h*10);
-      Parr[DATASTORED-1]= (int) P; // no decimal
-*/
-
       gdata.tem = (int) (t*10);
       gdata.hum = (int) (h*10);
       gdata.pre = (int) P; // no decimal
@@ -285,19 +258,7 @@ void readSensors(){
  */      
       EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
       mempointer++;
-	  if(mempointer==DATASTORED){mempointer=0;}
-//      EEPROM.put(((DATASTORED-1)*DATASTOREDSIZE),gdata);
-/*         Serial.println("----------");
-      for (int i=0; i<DATASTORED; i++){
-         EEPROM.get((i*DATASTOREDSIZE), gdata);
-         Serial.print(gdata.tem);
-         Serial.print("\t");
-         Serial.print(gdata.hum);
-         Serial.print("\t");
-         Serial.print(gdata.pre);
-         Serial.print("\n");
-      }
-*/      
+	    if(mempointer==DATASTORED){mempointer=0;}
       stored = 1;
   } else
       stored = 0;
@@ -313,15 +274,12 @@ void schermo()
         tupo();
         break;
       case 2:
-//        graph(Tarr, "Temperatura (dC)", 1);
         graphE(1, "Temperatura (dC)", 1, mempointer);
         break;
       case 3:
-//        graph(harr, "Umidita' (%RH)", 1);
         graphE(2, "Umidita' (%RH)", 1, mempointer);
         break;
       case 4:
-//        graph(Parr, "Pressione (mb)", 0);
         graphE(3, "Pressione (mb)", 0, mempointer);
         break;
       case 5:
@@ -417,37 +375,6 @@ String dataOut(int val, int r)
   return printData;
 }
 
-
-void graph(int theArray[], String message, int r)
-  {
-    int vmin, vmax, pix;
-    float tick;
-    // trova min e max nell'array
-
-    vmin = vmax = theArray[DATASTORED-1];
-    for (int i=0; i<DATASTORED; i++){
-      vmin=min(theArray[i],vmin);
-      vmax=max(theArray[i],vmax);
-    }
-    
-    tick = (vmax - vmin)/19.0;  // 20 lines graph
-    if (vmax==vmin) {tick=0.1;};
-    display.clearDisplay();
-    for (int i=0; i<DATASTORED; i++){
-      pix= -1*(((theArray[i]-vmin)/tick)-29);
-      display.drawPixel(i, pix, WHITE);
-    }
-    display.setCursor(0,0);
-    display.print(message);
-    display.setCursor(90,8);
-    display.print(dataOut(vmax, r));
-    display.setCursor(90,23);
-    display.print(dataOut(vmin, r));
-
-    display.display();
-
-  }
-
 int datafromeeprom(int wgraph, graph_data gdata){
   int rd = 0;
   switch (wgraph){
@@ -471,7 +398,7 @@ void graphE(int wgraph, String message, int r, int mempointer)
 	graph_data gdata;
     uint8_t pnt, pntp, i, gi;
     // trova min e max nell'array
-// get last data
+    // get last data
     if (mempointer==0){
       pnt = 0;
       pntp = DATASTORED-1;
@@ -497,7 +424,7 @@ void graphE(int wgraph, String message, int r, int mempointer)
     if (vmax==vmin) {tick=0.1;};
     display.clearDisplay();
     i = pnt;
-	gi = 0;
+	  gi = 0;
     while (gi<DATASTORED){
       EEPROM.get((i*DATASTOREDSIZE),gdata);
       rd = datafromeeprom(wgraph,gdata);
@@ -505,11 +432,9 @@ void graphE(int wgraph, String message, int r, int mempointer)
       display.drawPixel(gi, pix, WHITE);
       Serial.println(i);
       i++;
-	  gi++;
+	    gi++;
       if (i == DATASTORED){i = 0;}
     }
-
-
 
     display.setCursor(0,0);
     display.print(message);
@@ -519,7 +444,6 @@ void graphE(int wgraph, String message, int r, int mempointer)
     display.print(dataOut(vmin, r));
 
     display.display();
-
   }
 
 
