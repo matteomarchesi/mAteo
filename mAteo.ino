@@ -516,18 +516,24 @@ void set_clock()
               switch(stfun){
                 case 1: //hrs
                   hours++;
+				  if (hours>23){hours=0;}
                   break;
                 case 2: //min
                   minutes++;
+				  if (minutes>59){minutes=0;}
                   break;
                 case 3: //sec
                   seconds=0;
                   break;
                 case 4: //dd
                   dd++;
-                  break;
+                  if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))){
+					if (dd>mmdds[mm-1]){dd=1}
+				  }
+	              break;
                 case 5: //mm
                   mm++;
+				  if (mm>12){mm=1;}
                   break;
                 case 6: //yyyy
                   yyyy++;
@@ -540,18 +546,28 @@ void set_clock()
               switch(stfun){
                 case 1: //hrs
                   hours--;
+				  if (hours<0){hours=23;}
                   break;
                 case 2: //min
                   minutes--;
+				  if (minutes<0){minutes=59;}
                   break;
                 case 3: //sec
                   seconds=0;
                   break;
                 case 4: //dd
                   dd--;
+/*
+ * missing management of leap year in dd decreemention (should not be a big issue)
+ *                  if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))){
+ *					if (dd>mmdds[mm-1]){dd=1}
+ *				  }
+ */
+				  if (dd<0){dd=mmdds[mm-1];}
                   break;
                 case 5: //mm
                   mm--;
+				  if (mm<0){mm=12;}
                   break;
                 case 6: //yyyy
                   yyyy--;
@@ -603,7 +619,7 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
                   hours = 0;
                   if (dd>mmdds[mm])
                   {
-                    if (!((dd = 29) && (mm = 2) && ((yyyy = 2020) || (yyyy = 2024) || (yyyy = 2028) || (yyyy = 2032)))) 
+                    if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))) 
                     {
                       mm ++;
                       dd = 1;
