@@ -193,6 +193,7 @@ void setup() {
   gdata.hum = 0;
   gdata.pre = 0;
 */  
+ // EEPROM.get(1023,mempointer);
 
 }
 
@@ -259,6 +260,7 @@ void readSensors(){
       EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
       mempointer++;
 	    if(mempointer==DATASTORED){mempointer=0;}
+      EEPROM.put(1023,mempointer);
       stored = 1;
   } else
       stored = 0;
@@ -528,9 +530,9 @@ void set_clock()
                 case 4: //dd
                   dd++;
                   if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))){
-					if (dd>mmdds[mm-1]){dd=1}
-				  }
-	              break;
+					          if (dd>mmdds[mm-1]){dd=1;}
+				          }
+	                break;
                 case 5: //mm
                   mm++;
 				  if (mm>12){mm=1;}
