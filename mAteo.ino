@@ -619,7 +619,7 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
                 {
                   dd ++;
                   hours = 0;
-                  if (dd>mmdds[mm])
+                  if (dd>mmdds[mm-1])
                   {
                     if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))) 
                     {
