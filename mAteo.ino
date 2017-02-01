@@ -28,7 +28,7 @@ int cyclesPerSecond = 490;
 
 volatile int masterClock = 0;
 
-volatile uint8_t seconds, minutes, hours, dd, mm;
+volatile int8_t seconds, minutes, hours, dd, mm;
 volatile int yyyy;
 
 uint8_t mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
