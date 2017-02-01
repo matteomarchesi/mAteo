@@ -1,44 +1,58 @@
 # mAteo
 
-Developped (well... actually under development) on Arduino NANO.
+mAteo is a small and simple weather station build on Arduino Nano.
 
-mAteo is a small "weather station" that measures current indoor temperature and humidity (with a DHT22) and pressure (witth BMP180) and display data on a 0.96" SSD1306 OLED display.
-Also implements clock without using RTC but with the "1 wire" approach that uses pwm and external interrupt.
-(inspired by http://www.instructables.com/id/Make-an-accurate-Arduino-clock-using-only-one-wire/)
-Clock is preset at sketch compiling date and time, manages leap year and it's adjustable by end-user.
-The 5 keys keyboard is analogic and designed according te example in Arduino official book of the started kit.
+It implements measures of temperature, humidity and pressure using DH22 (tempetaure and umidity) and BMP180 (pressure) sensors modules.
+It also implements a clock build with "1 wire" approach (
+[inspired from here](http://www.instructables.com/id/Make-an-accurate-Arduino-clock-using-only-one-wire/)).
+Data are shown on a 0.96" SSD1306 OLED display.
+The user can interact with a 5 keys keyboard, build on the basis of Arduino starter kit tutorial, that use only 1 analog input.
 
-*** From now on the functions are not yet implemented ***
-Also displays graphics of data trends (temperature, humidity and pressure) in the last 24hrs.
-To be evaluated the possibility to monitor also data from remote sensors to be connected wireless HC-12 (needs a sencond Arduino).
-(http://www.instructables.com/id/Long-Range-18km-Arduino-to-Arduino-Wireless-Commun/)
+Real time data are shown on screen all together.
+Graphs of last 24hrs (1 point each 30') are on separated screens.
+Data for graph are stored in EEPROM.
 
-Alternative keyboard approach to be evaluated (it looks to be more simple)
-(http://tronixstuff.com/2011/01/11/tutorial-using-analog-input-for-multiple-buttons/)
+## BOM
+- Arduino NANO
+- DHT22 temperature and humidity sensor
+- BMP180 temparture and pressure sensor
+- SSD1306 0.96" OLED display
+- 5 pushbuttons
+- 1 220ohm resistor
+- 1 2kohm resistor
+- 1 4.7kohm resistor
+- 2 10kohm resistors
 
-*** BOM ***
-- Arduino NANO			1
-- DHT22 sensor module	1
-- BMP180 sensor module	1
-- SSD1306				1
-- push buttons			5
-- 9V battery			1
-- 9V battery clip		1
-- resistors				
-- resistors				
-- resistors				
-- resistors				
-- resistors	10M			2
+## Arduino pin used
+Single wire clock
+- D2 interrupt
+- D3 PWM used for clock
 
-Arduino connections:
-DHT					D12
-keyboard			A6
-battery monitor		A7
-PWM (clock)			D3
-Interrupt (clock)	D2
-SDA					A4
-SCL					A5
-VIN					9V power supply
-5V					to all periferals
+keyboard
+- A6
 
-schematics to be done.
+I2C
+- A4 SDA
+- A5 SCL
+
+Power supply of components
+- 5V
+- GND
+
+Arduino NANO is powerd with onboard USB.
+
+## SW dependencies
+- Wire
+- SFE_BMP180
+- DHT *
+- Adafruid_GFX *
+- Adafruid_SSD1306 *
+- EEPROM
+
+(*) these have been modified to reduce memory footprint and have not been uploaded yet on my github.
+
+## how to use
+chapter to be witten
+
+
+
