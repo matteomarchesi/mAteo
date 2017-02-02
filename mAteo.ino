@@ -21,20 +21,21 @@
  *  Connect D2 with D3 on Arduino
  */
 
-int clockInterrupt = 0; //interrupt 0 is pin 2 on UNO
-int pwmOut = 3; //pin D3
+uint8_t clockInterrupt = 0; //interrupt 0 is pin 2 on UNO
+uint8_t pwmOut = 3; //pin D3
 
 int cyclesPerSecond = 490;
 
 volatile int masterClock = 0;
 
-volatile int seconds, minutes, hours, dd, mm, yyyy;
+volatile int8_t seconds, minutes, hours, dd, mm;
+volatile int yyyy;
 
-int mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+uint8_t mmdds[] = {31,28,31,30,31,30,31,31,30,31,30,31};
 
 String clocktime = ""; 
 
-String printTime();
+String printTime2();
 
 /*
  *  DHT22 (temperature and humidity) definitions
@@ -112,10 +113,10 @@ void set_clock();
 
 void readSensors();
 
-int tastiera();
+uint8_t tastiera();
 
-int funzione = 0;
-int premuto = 0;
+int8_t funzione = 0;
+uint8_t premuto = 0;
 /*
  *  0 = spento
  *  1 = t/h/p + ora
@@ -193,6 +194,7 @@ void setup() {
   gdata.hum = 0;
   gdata.pre = 0;
 */  
+  EEPROM.get(1023,mempointer);
 
 }
 
@@ -241,10 +243,11 @@ void readSensors(){
   }
 
 //  if (((seconds == 0) || (seconds == 5) || (seconds == 10) || (seconds == 15) || (seconds == 20) || (seconds == 25) || (seconds == 30) || (seconds == 35) || (seconds == 40) || (seconds == 45) || (seconds == 50) || (seconds == 55)) && (stored == 0)) {
-  if (((minutes == 0) || (minutes == 30)) && (stored == 0)) {
-      gdata.tem = (int) (t*10);
-      gdata.hum = (int) (h*10);
-      gdata.pre = (int) P; // no decimal
+  if ((minutes == 0) || (minutes == 30)){
+      if (stored == 0) {
+        gdata.tem = (int) (t*10);
+        gdata.hum = (int) (h*10);
+        gdata.pre = (int) P; // no decimal
 /* 
  *   mempointer points to next data to be written
  *   writes data in position 0, 1, 2 ...
@@ -256,10 +259,12 @@ void readSensors(){
  *                   ------->P
  *  
  */      
-      EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
-      mempointer++;
-	    if(mempointer==DATASTORED){mempointer=0;}
-      stored = 1;
+        EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
+        mempointer++;
+  	    if(mempointer==DATASTORED){mempointer=0;}
+        EEPROM.put(1023,mempointer);
+        stored = 1;
+      }
   } else
       stored = 0;
 }
@@ -354,7 +359,7 @@ void tupo()
     display.print(P,1);
     display.println("mb");
 
-    clocktime = printTime();
+    clocktime = printTime2();
     display.setCursor(6,24);
     display.print(clocktime);
     display.display();
@@ -452,7 +457,7 @@ void set_clock()
     int stfun = 0;
     
     display.clearDisplay();
-    clocktime = printTime();
+    clocktime = printTime2();
     display.setCursor(0,0);
     display.print("Set Time");
 
@@ -506,7 +511,7 @@ void set_clock()
 		  
           display.setCursor(6,24);
           display.fillRect(0,24,127,30,0);
-          clocktime = printTime();
+          clocktime = printTime2();
           display.print(clocktime);
           display.display();
 
@@ -528,9 +533,9 @@ void set_clock()
                 case 4: //dd
                   dd++;
                   if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))){
-					if (dd>mmdds[mm-1]){dd=1}
-				  }
-	              break;
+					          if (dd>mmdds[mm-1]){dd=1;}
+				          }
+	                break;
                 case 5: //mm
                   mm++;
 				  if (mm>12){mm=1;}
@@ -617,7 +622,7 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
                 {
                   dd ++;
                   hours = 0;
-                  if (dd>mmdds[mm])
+                  if (dd>mmdds[mm-1])
                   {
                     if (!((dd == 29) && (mm == 2) && ((yyyy == 2020) || (yyyy == 2024) || (yyyy == 2028) || (yyyy == 2032)))) 
                     {
@@ -637,38 +642,24 @@ void clockCounter() // called by interrupt 0 (pin 2 on the UNO) receiving a risi
   return;
 }
 
-String printTime(){
-  String ct = "";
-  if(hours<10){
-    ct = "0";
+String twodigits(int val){
+  String td = "";
+  if(val<10){
+    td = "0";
   }
-  ct = String(ct + hours + ":");
-  
-  if(minutes<10){
-    ct = String(ct + "0");
-  }
-  ct = String(ct + minutes + ":");
-
-  if(seconds<10){
-    ct = String(ct + "0");
-  }
-  ct = String(ct + seconds + " ");
-  if (dd<10){
-    ct = String(ct + "0");
-  }
-  ct = String(ct + dd + "/");
-
-  if (mm<10){
-    ct = String(ct + "0");
-  }
-  ct = String(ct + mm + "/" + yyyy);
-
-  return ct;
+  td = String(td + val);
+  return td;
 }
 
-int tastiera(){
+String printTime2(){
+  String ct;
+  ct = String(twodigits(hours) + ":" + twodigits(minutes) + ":" + twodigits(seconds) + " " + twodigits(dd) + "/" + twodigits(mm) + "/" + twodigits(yyyy));
+  return ct;  
+}
+
+uint8_t tastiera(){
   int keyp;
-  int pressed = 0;
+  uint8_t pressed = 0;
   delay(100);
   keyp = analogRead(KEYPIN);
   if (keyp > KEY1-20 && keyp < KEY1+20){
