@@ -435,7 +435,7 @@ void graphE(int wgraph, String message, int r, int mempointer)
       rd = datafromeeprom(wgraph,gdata);
       pix= -1*(((rd-vmin)/tick)-29);
       display.drawPixel(gi, pix, WHITE);
-      Serial.println(i);
+//      Serial.println(i);
       i++;
 	    gi++;
       if (i == DATASTORED){i = 0;}
