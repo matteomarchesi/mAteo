@@ -1,9 +1,28 @@
+/*
+ * mAteo
+ * weather station for Arduino UNO/NANO
+ *
+ * https://github.com/matteomarchesi/mAteo
+ * https://matteomarchesi.altervista.org
+ * matteo.marchesi71@gmail.com
+ *
+ */
+
+#define MATEOLIB
+//#define DEBUG
 #include <SFE_BMP180.h>
 #include <Wire.h>
-#include <mAteo_DHT.h>
-#include <mAteo_GFX.h>
-#include <mAteo_SSD1306.h>
 #include <EEPROM.h>
+
+#ifdef MATEOLIB
+  #include <mAteo_DHT.h>
+  #include <mAteo_GFX.h>
+  #include <mAteo_SSD1306.h>
+#else
+  #include <DHT.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+#endif
 
 /*
  *  Keyboard
@@ -43,8 +62,11 @@ String printTime2();
 #define DHTTYPE DHT22 
 #define DHTPIN 9
 
-mAteo_DHT dht(DHTPIN, DHTTYPE);
-
+#ifdef MATEOLIB
+  mAteo_DHT dht(DHTPIN, DHTTYPE);
+#else
+  DHT dht(DHTPIN, DHTTYPE);
+#endif
 /*
  *  BMP180 (temperature and pressure) definitions
  */
@@ -70,7 +92,13 @@ SFE_BMP180 pressure;
  */
 
 #define OLED_RESET 4
-mAteo_SSD1306 display(OLED_RESET);
+#ifdef MATEOLIB
+  mAteo_SSD1306 display(OLED_RESET);
+#else
+  Adafruit_SSD1306 display(OLED_RESET);
+#endif
+
+unsigned int monitoroff = 10000;
 
   char status;
   double P, h, t;
@@ -82,7 +110,7 @@ mAteo_SSD1306 display(OLED_RESET);
 
 #define DATASTORED 48
 #define DATASTOREDSIZE 6
-uint8_t mempointer = 0;
+uint8_t mempointer;
 
 typedef struct {
   int tem;
@@ -99,6 +127,7 @@ uint8_t stored = 0;
  */
 
 unsigned long previous = 0;
+unsigned long previousm = 0;
 const int interval = 4000;
 
 void schermo();
@@ -123,8 +152,10 @@ uint8_t premuto = 0;
  */
 
 void setup() {
+#ifdef DEBUG
   Serial.begin(9600);
   Serial.println("... on ...");
+#endif
 /*  
  *   Clock setup
  */
@@ -180,14 +211,15 @@ void setup() {
 /*  
  *   BMP setup
  */
-
-  if (pressure.begin())
+  pressure.begin();
+/*  if (pressure.begin())
     Serial.println("BMP180 init success");
   else
   {
     Serial.println("BMP180 init fail");
     while(1); // Pause forever.
   }
+*/
 /*
  * reset the memory
   gdata.tem = 0;
@@ -195,6 +227,20 @@ void setup() {
   gdata.pre = 0;
 */  
   EEPROM.get(1023,mempointer);
+<<<<<<< HEAD
+=======
+
+// reset EEPROM id mempoiter doesn't make sense (1st startup or memory corrupted)
+  if (mempointer>(DATASTORED-1)){
+    mempointer = 0;
+    gdata.tem = 0;
+    gdata.hum = 0;
+    gdata.pre = 0;
+    for (int8_t i = 0; i < DATASTORED; i++){
+      EEPROM.put(i,gdata);
+    }
+  }
+>>>>>>> bugfix
 
 }
 
@@ -206,6 +252,11 @@ void loop() {
     readSensors();   
   }
 
+//  if (current - previousm >= monitoroff) {
+//    previousm = current;
+//    funzione = 0;   
+//  }
+
   premuto = tastiera();
   switch(premuto) {
     case 1:
@@ -213,6 +264,9 @@ void loop() {
       break;
     case 2:
       funzione --;
+      break;
+    case 5:
+      funzione = 5;
       break;
     default:
       break;
@@ -243,10 +297,11 @@ void readSensors(){
   }
 
 //  if (((seconds == 0) || (seconds == 5) || (seconds == 10) || (seconds == 15) || (seconds == 20) || (seconds == 25) || (seconds == 30) || (seconds == 35) || (seconds == 40) || (seconds == 45) || (seconds == 50) || (seconds == 55)) && (stored == 0)) {
-  if (((minutes == 0) || (minutes == 30)) && (stored == 0)) {
-      gdata.tem = (int) (t*10);
-      gdata.hum = (int) (h*10);
-      gdata.pre = (int) P; // no decimal
+  if ((minutes == 0) || (minutes == 30)){
+      if (stored == 0) {
+        gdata.tem = (int) (t*10);
+        gdata.hum = (int) (h*10);
+        gdata.pre = (int) P; // no decimal
 /* 
  *   mempointer points to next data to be written
  *   writes data in position 0, 1, 2 ...
@@ -258,11 +313,20 @@ void readSensors(){
  *                   ------->P
  *  
  */      
+<<<<<<< HEAD
       EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
       mempointer++;
 	    if(mempointer==DATASTORED){mempointer=0;}
       EEPROM.put(1023,mempointer);
       stored = 1;
+=======
+        EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
+        mempointer++;
+  	    if(mempointer==DATASTORED){mempointer=0;}
+        EEPROM.put(1023,mempointer);
+        stored = 1;
+      }
+>>>>>>> bugfix
   } else
       stored = 0;
 }
@@ -292,9 +356,9 @@ void schermo()
       default:
         if (funzione < 0)
           {
-            funzione = 5;
+            funzione = 4;
           }
-        if (funzione > 5)
+        if (funzione > 4)
           {
             funzione = 0;
           }
@@ -433,7 +497,7 @@ void graphE(int wgraph, String message, int r, int mempointer)
       rd = datafromeeprom(wgraph,gdata);
       pix= -1*(((rd-vmin)/tick)-29);
       display.drawPixel(gi, pix, WHITE);
-      Serial.println(i);
+//      Serial.println(i);
       i++;
 	    gi++;
       if (i == DATASTORED){i = 0;}
