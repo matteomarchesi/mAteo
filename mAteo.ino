@@ -227,8 +227,6 @@ void setup() {
   gdata.pre = 0;
 */  
   EEPROM.get(1023,mempointer);
-<<<<<<< HEAD
-=======
 
 // reset EEPROM id mempoiter doesn't make sense (1st startup or memory corrupted)
   if (mempointer>(DATASTORED-1)){
@@ -240,7 +238,6 @@ void setup() {
       EEPROM.put(i,gdata);
     }
   }
->>>>>>> bugfix
 
 }
 
@@ -302,31 +299,12 @@ void readSensors(){
         gdata.tem = (int) (t*10);
         gdata.hum = (int) (h*10);
         gdata.pre = (int) P; // no decimal
-/* 
- *   mempointer points to next data to be written
- *   writes data in position 0, 1, 2 ...
- *  
- *  
- *   store position  0   1   2   3   4   5   6   7
- *   mempointer      x-1 x   P  older data
- *   for graph                   |--------------->
- *                   ------->P
- *  
- */      
-<<<<<<< HEAD
-      EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
-      mempointer++;
-	    if(mempointer==DATASTORED){mempointer=0;}
-      EEPROM.put(1023,mempointer);
-      stored = 1;
-=======
         EEPROM.put(mempointer*DATASTOREDSIZE,gdata);
         mempointer++;
   	    if(mempointer==DATASTORED){mempointer=0;}
         EEPROM.put(1023,mempointer);
         stored = 1;
-      }
->>>>>>> bugfix
+        }
   } else
       stored = 0;
 }
