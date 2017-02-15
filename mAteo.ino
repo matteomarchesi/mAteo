@@ -29,11 +29,11 @@
  */
 
 #define KEYPIN A6 
-#define KEY5 1023
-#define KEY4 990
+#define KEY1 1023
+#define KEY2 1000
 #define KEY3 930
-#define KEY2 700
-#define KEY1 512
+#define KEY4 700
+#define KEY5 512
 
 /*
  *  Clock definitions 
@@ -702,6 +702,11 @@ uint8_t tastiera(){
   uint8_t pressed = 0;
   delay(100);
   keyp = analogRead(KEYPIN);
+#ifdef DEBUG
+  if (keyp> 20 ){
+    Serial.println(keyp);
+  }
+#endif  
   if (keyp > KEY1-20 && keyp < KEY1+20){
     pressed = 1;
   }
